@@ -1,6 +1,7 @@
 import random
 
 def generate_otp_code():
+    """Генератор случайного шестизначного кода для email."""
     otp_length = 6
     otp_digits = '0123456789'
 

@@ -13,6 +13,7 @@ from .permissions import IsAdminOrOwner
 
 
 class CustomObtainAuthToken(ObtainAuthToken):
+    """Кастомная вьюха для получения токена."""
     
     serializer_class = CustomTokenObtainSerializer
 
@@ -27,6 +28,7 @@ class CustomObtainAuthToken(ObtainAuthToken):
 @api_view(['POST'])
 @permission_classes([])
 def register(request):
+    """Функция регистрации."""
     if request.method == 'POST':
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -40,6 +42,7 @@ def register(request):
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def user_profile(request):
+    """Функция получения или редактирования информации своего профиля."""
     if request.method == 'GET':
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
@@ -50,8 +53,26 @@ def user_profile(request):
             return Response({'message': 'Profile updated successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def other_profile(request, pk=None):
+    """Функция получения информации чужого профиля."""
+    if request.method == 'GET':
+        if pk:
+            serializer = UserSerializer(get_object_or_404(CustomUser, id=pk))
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profile_list(request):
+    """Функция получения списка профилей."""
+    serializer = UserSerializer(CustomUser.objects.all(), many=True)
+    return Response(serializer.data)
+
 @api_view(['DELETE'])
 @permission_classes([IsAdminOrOwner])
 def delete_account(request):
+    """Функция удаления профиля."""
     request.user.delete()
     return Response({'message': 'Account deleted successfully'}, status=status.HTTP_204_NO_CONTENT)

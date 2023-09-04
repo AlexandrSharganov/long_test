@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 class CustomUserManager(BaseUserManager):
+    """Кастомный менеджер модели пользователя."""
+    
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('Email is required')
@@ -20,6 +22,8 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    """Кастомная модель пользователя."""
+    
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)

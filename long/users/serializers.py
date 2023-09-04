@@ -6,6 +6,7 @@ from .models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериализатор пользователя."""
 
     class Meta:
         model = CustomUser
@@ -13,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """Сериализатор регистрации пользователя."""
 
     class Meta:
         model = CustomUser
@@ -30,14 +32,14 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomTokenObtainSerializer(serializers.Serializer):
+    """Сериализатор получения токена."""
+    
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     otp_code = serializers.CharField(read_only=True)
     
     def validate(self, data):
-        """
-        Check that start is before finish.
-        """       
+        """Валидация кода подтверждения при получении токена."""       
         user = get_object_or_404(CustomUser, email=data['email'])
         if self.initial_data['otp_code'] != user.otp_code:
             raise serializers.ValidationError("Your otp_code is wrong")
