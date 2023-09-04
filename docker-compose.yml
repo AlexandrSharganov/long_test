@@ -1,0 +1,58 @@
+version: '3.3'
+
+services:
+    nginx:
+        restart: always
+        image: nginx:1.21.3-alpine
+        ports:
+            - 80:80
+        volumes:
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - static_volume:/app/long/django_static
+    db:
+        image: postgres:13.1-alpine
+        restart: unless-stopped
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        env_file:
+          - ./.env
+        expose:
+            - 5432
+    server:
+        restart: unless-stopped
+        build:
+            context: .
+            dockerfile: ./docker/backend/Dockerfile
+        entrypoint: /app/docker/backend/server-entrypoint.sh
+        volumes:
+            - static_volume:/app/long/django_static
+        expose:
+            - 8000     
+        env_file:
+          - ./.env
+        depends_on:
+            - nginx
+            - db
+    worker:
+        restart: unless-stopped
+        build:
+            context: .
+            dockerfile: ./docker/backend/Dockerfile
+        entrypoint: /app/docker/backend/worker-entrypoint.sh
+        volumes:
+            - static_volume:/app/long/django_static
+        env_file:
+          - ./.env
+        depends_on:
+            - server
+            - redis
+    redis:
+        restart: unless-stopped
+        image: redis:7.0.5-alpine 
+        expose:
+            - 6379
+    
+    
+volumes:
+    static_volume: {}
+    postgres_data: {}
