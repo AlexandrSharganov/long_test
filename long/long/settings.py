@@ -124,11 +124,27 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.ScryptPasswordHasher",
 ]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
 CELERY_BROKER_URL = os.getenv("BROKER_URL", "redis://localhost:6379/")
 CELERY_RESULT_BACKEND = os.getenv("RESULT_BACKEND", "redis://localhost:6379/")
 
 CELERY_ACCEPT_CONTENT = {'application/json'}
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 465
+EMAIL_HOST_USER = 'alexandr.sharganov@gmail.com'
+EMAIL_HOST_PASSWORD = 'bsatjugckqswdcja'
+EMAIL_USE_SSL = True
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/"),
+        "KEY_PREFIX": "imdb",
+        "TIMEOUT": 60 * 15,
+    }
+}

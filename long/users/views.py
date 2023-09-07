@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.core.cache import cache
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -8,21 +9,45 @@ from rest_framework.authtoken.models import Token
 
 from .tasks import send_otp_to_user_email
 from .models import CustomUser
-from .serializers import UserSerializer, RegistrationSerializer, CustomTokenObtainSerializer
+from .serializers import UserSerializer, RegistrationSerializer, CustomTokenObtainSerializer, GetOtpCodeSerializer
 from .permissions import IsAdminOrOwner
+from .utils import generate_otp_code
+
+
+@api_view(['POST'])
+@permission_classes([])
+def get_otp_code(request):
+    """Функция получения одноразового кода."""
+    if request.method == 'POST':
+        serializer = GetOtpCodeSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = get_object_or_404(CustomUser, email=serializer.validated_data['email'])
+            otp_code = generate_otp_code()
+            cache.set(
+                key=user,
+                value=otp_code,
+                timeout=60 * 2
+            )
+            send_otp_to_user_email.delay(user.id)
+            return Response(
+                {'message': f'otp verification code have been sended to {user.email}'},
+                status=status.HTTP_200_OK
+            )
+    
 
 
 class CustomObtainAuthToken(ObtainAuthToken):
     """Кастомная вьюха для получения токена."""
     
     serializer_class = CustomTokenObtainSerializer
-
+    
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):
             user = get_object_or_404(CustomUser, email=serializer.validated_data['email'])
             token, created = Token.objects.get_or_create(user=user)
             return Response({'token': token.key})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -34,7 +59,6 @@ def register(request):
         if serializer.is_valid():
             serializer.save()
             user = CustomUser.objects.get(email=request.data['email'])
-            send_otp_to_user_email.delay(user.id)
             return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
